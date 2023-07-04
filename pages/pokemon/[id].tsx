@@ -99,7 +99,7 @@ PokemonPage.getLayout = function getLayout(page) {
 };
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const pokemonIdPaths = [...Array(151)].map((value, index) => ({
+  const pokemonIdPaths = [...Array(151)].map((_value, index) => ({
     params: { id: `${index + 1}` },
   }));
 
@@ -111,25 +111,35 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
   return {
     paths: [...pokemonIdPaths, ...pokemonNamePaths],
-    fallback: false,
+    fallback: "blocking",
   };
 };
 
 export const getStaticProps: GetStaticProps = async (ctx) => {
-  const { id } = ctx.params as { id: string };
-  const { data } = await pokeApi.get<FullPokemon>(`/pokemon/${id}`);
+  try {
+    const { id } = ctx.params as { id: string };
+    const { data } = await pokeApi.get<FullPokemon>(`/pokemon/${id}`);
 
-  const pokemon = {
-    id: data.id,
-    name: data.name,
-    sprites: data.sprites,
-  };
+    const pokemon = {
+      id: data.id,
+      name: data.name,
+      sprites: data.sprites,
+    };
 
-  return {
-    props: {
-      pokemon,
-    },
-  };
+    return {
+      props: {
+        pokemon,
+      },
+      revalidate: 86400, // -> 24 hours,
+    };
+  } catch (error) {
+    return {
+      redirect: {
+        destination: "/",
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default PokemonPage;
